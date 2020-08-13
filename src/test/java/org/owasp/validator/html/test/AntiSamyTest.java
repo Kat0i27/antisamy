@@ -1131,13 +1131,13 @@ public class AntiSamyTest {
         String html = "<body> hey you <img/> out there on your own </body>";
 
         String s = null;
-        long start = System.currentTimeMillis();
+        //long start = System.currentTimeMillis();
         for (int j = 0; j < testReps; j++) {
             s = invalidXmlCharacters.matcher(html).replaceAll("");
         }
-        long total = System.currentTimeMillis() - start;
+        //long total = System.currentTimeMillis() - start;
 
-        start = System.currentTimeMillis();
+        //start = System.currentTimeMillis();
         Matcher matcher;
         for (int j = 0; j < testReps; j++) {
             matcher = invalidXmlCharacters.matcher(html);
@@ -1145,7 +1145,7 @@ public class AntiSamyTest {
                 s = matcher.replaceAll("");
             }
         }
-        long total2 = System.currentTimeMillis() - start;
+        //long total2 = System.currentTimeMillis() - start;
 
         assertNotNull(s);
         //System.out.println("replaceAllDirect " + total);
@@ -1424,5 +1424,24 @@ static final String test33 = "<html>\n"
         //System.out.println("SAX parser: " + as.scan(test40, policy, AntiSamy.SAX).getCleanHTML());
         assertThat(as.scan(test40, policy, AntiSamy.DOM).getCleanHTML(), not(containsString("<svg onload=alert(1)//")));
         //System.out.println("DOM parser: " + as.scan(test40, policy, AntiSamy.DOM).getCleanHTML());
+    }
+
+    @Test
+    public void testGithubIssue48() throws ScanException, PolicyException {
+
+        // Concern is that onsiteURL regex is not safe for URLs that start with //.
+        // For example:  //evilactor.com?param=foo
+
+        final String test48 = "<a href=\"//kkk.com/stealinfo?a=xxx&b=xxx\"><span style=\"color:red;font-size:100px\">"
+                + "You must click me</span></a><portal src=\"blah";
+
+        // Failing output? output:
+        // <a href="//kkk.com/stealinfo?a=xxx&amp;b=xxx"><span style="color: red;font-size: 100.0px;">
+        // You must click me</span></a>
+
+        assertThat(as.scan(test48, policy, AntiSamy.SAX).getCleanHTML(), not(containsString("//kkk.com/")));
+        System.out.println("SAX parser: " + as.scan(test48, policy, AntiSamy.SAX).getCleanHTML());
+        assertThat(as.scan(test48, policy, AntiSamy.DOM).getCleanHTML(), not(containsString("//kkk.com/")));
+        System.out.println("DOM parser: " + as.scan(test48, policy, AntiSamy.DOM).getCleanHTML());
     }
 }
